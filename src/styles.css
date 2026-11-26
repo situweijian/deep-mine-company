@@ -452,65 +452,151 @@ button:disabled {
 .tutorial-banner {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "step copy action skip";
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 10px;
+  gap: 9px 12px;
   min-width: 0;
-  padding: 10px 11px;
-  border: 1px solid #8e672f;
-  border-radius: 6px;
+  padding: 12px 13px 15px;
+  overflow: hidden;
+  border: 1px solid #c88b31;
+  border-left: 4px solid var(--amber-strong);
+  border-radius: 7px;
   background:
-    linear-gradient(90deg, rgb(232 164 59 / 10%), transparent),
-    #332719;
-  box-shadow: inset 0 0 0 1px rgb(255 219 130 / 10%);
+    radial-gradient(circle at 0 0, rgb(255 208 106 / 20%), transparent 32%),
+    linear-gradient(100deg, #3a2914, #211a13 58%);
+  box-shadow:
+    0 12px 30px rgb(0 0 0 / 28%),
+    inset 0 0 0 1px rgb(255 228 163 / 12%);
 }
 
 .tutorial-strip {
-  width: min(100%, 2100px);
+  width: min(100%, 1560px);
   margin: 0 auto 10px;
 }
 
 .tutorial-step {
+  grid-area: step;
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   place-items: center;
   color: #2a2112;
-  border-radius: 4px;
-  background: var(--amber);
-  font-size: 12px;
+  border: 1px solid #ffe4a4;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #ffd06a, #dc902b);
+  box-shadow:
+    3px 3px 0 #714514,
+    0 0 18px rgb(232 164 59 / 20%);
+  font-size: 13px;
   font-weight: 900;
 }
 
 .tutorial-copy {
+  grid-area: copy;
+  display: grid;
   min-width: 0;
+  gap: 2px;
+}
+
+.tutorial-kicker {
+  color: var(--teal);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 .tutorial-copy strong {
   display: block;
-  margin-bottom: 2px;
-  color: #ffe5a6;
-  font-size: 13px;
+  color: #fff0bf;
+  font-size: 16px;
+  line-height: 1.25;
 }
 
-.tutorial-copy span {
+.tutorial-detail {
   display: block;
   overflow: hidden;
-  color: #d9ccb1;
-  font-size: 11px;
-  line-height: 1.45;
+  color: #e5d4b2;
+  font-size: 12px;
+  line-height: 1.4;
   text-overflow: ellipsis;
 }
 
-.tutorial-skip {
-  min-height: 32px;
-  padding: 4px 7px;
+.tutorial-primary {
+  grid-area: action;
+  display: inline-flex;
+  min-width: 132px;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 12px;
   cursor: pointer;
-  color: #c6b993;
-  border: 1px solid #6e5d3e;
+  color: #24170a;
+  border: 1px solid #ffe5a4;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #ffd66f, #e59b31);
+  box-shadow:
+    0 5px 0 #714514,
+    0 8px 20px rgb(0 0 0 / 28%);
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.tutorial-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #ffe28d, #f1a83d);
+}
+
+.tutorial-primary:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #714514;
+}
+
+.tutorial-primary:disabled {
+  cursor: wait;
+  color: #8e6d3e;
+  border-color: #674a2e;
+  background: #2b2117;
+  box-shadow: 0 4px 0 #19110b;
+}
+
+.tutorial-primary svg {
+  width: 17px;
+  height: 17px;
+}
+
+.tutorial-skip {
+  grid-area: skip;
+  min-height: 36px;
+  align-self: start;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: #bda983;
+  border: 1px solid #675139;
   border-radius: 4px;
-  background: transparent;
+  background: rgb(19 15 11 / 48%);
   font-size: 10px;
+}
+
+.tutorial-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  overflow: hidden;
+  background: #160f09;
+}
+
+.tutorial-progress > span {
+  display: block;
+  width: 14.28%;
+  height: 100%;
+  background: linear-gradient(90deg, #e8a43b, #8fe0c8);
+  box-shadow: 0 0 10px rgb(232 164 59 / 50%);
+  transition: width 220ms ease;
 }
 
 .scene-frame {
@@ -1025,10 +1111,49 @@ button:disabled {
   pointer-events: none;
 }
 
+.scene-command-button {
+  display: none;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  color: #22170a;
+  border: 1px solid #ffe19b;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #ffd36a, #e8a43b);
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.scene-command-button.is-boost {
+  color: #f1ffe9;
+  border-color: #9ce8cf;
+  background: linear-gradient(180deg, #4b947c, #286754);
+}
+
+.scene-command-button:disabled {
+  color: #a79370;
+  border-color: #68553b;
+  background: #241d16;
+}
+
+.scene-command-button svg {
+  width: 14px;
+  height: 14px;
+}
+
 .scene-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.mobile-section-tabs {
+  display: none;
 }
 
 .scene-pill {
@@ -1656,7 +1781,19 @@ button:disabled {
 
 .line-action.is-tutorial-target {
   border-color: var(--amber-strong);
-  box-shadow: 0 0 0 3px rgb(255 211 107 / 14%);
+  box-shadow:
+    0 0 0 3px rgb(255 211 107 / 14%),
+    0 0 28px rgb(232 164 59 / 16%);
+  animation: tutorial-target-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes tutorial-target-pulse {
+  50% {
+    border-color: #fff0bd;
+    box-shadow:
+      0 0 0 4px rgb(255 211 107 / 22%),
+      0 0 34px rgb(232 164 59 / 24%);
+  }
 }
 
 .line-head {
@@ -3186,15 +3323,19 @@ button:disabled {
   }
 
   .tutorial-banner {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 7px;
-    padding: 6px 7px;
+    grid-template-areas:
+      "step copy skip"
+      "action action action";
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: 6px 8px;
+    padding: 8px 8px 12px;
+    border-left-width: 3px;
   }
 
   .tutorial-step {
-    width: 28px;
-    height: 28px;
-    font-size: 10px;
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
   }
 
   .tutorial-copy {
@@ -3202,24 +3343,35 @@ button:disabled {
     gap: 1px;
   }
 
+  .tutorial-kicker {
+    font-size: 8px;
+  }
+
   .tutorial-copy strong {
     margin: 0;
-    font-size: 11px;
+    font-size: 13px;
     line-height: 1.25;
   }
 
-  .tutorial-copy span {
-    display: block;
+  .tutorial-detail {
+    display: -webkit-box;
     overflow: hidden;
-    font-size: 9px;
-    line-height: 1.3;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 10px;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .tutorial-primary {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    font-size: 13px;
   }
 
   .tutorial-skip {
-    min-height: 28px;
-    padding: 3px 6px;
+    min-height: 32px;
+    padding: 3px 7px;
     font-size: 9px;
   }
 
@@ -3290,21 +3442,21 @@ button:disabled {
     font-size: 12px;
   }
 
-  .tutorial-step {
-    width: 30px;
-    height: 30px;
+  .mobile-section-tabs {
+    order: 3;
   }
 
-  .tutorial-copy strong {
-    font-size: 11px;
+  .frontier-unlock-bar {
+    order: 2;
   }
 
-  .tutorial-copy span {
-    display: -webkit-box;
-    font-size: 11px;
-    line-height: 1.4;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+  .production-grid,
+  .layer-rail-shell {
+    order: 4;
+  }
+
+  .center-utility {
+    order: 5;
   }
 
   .mine-stage {
@@ -3472,12 +3624,14 @@ button:disabled {
   }
 
   .scene-legend {
-    min-width: 0;
-    flex-wrap: nowrap;
+    display: none;
   }
 
-  .scene-legend .scene-pill:not(.is-live) {
-    display: none;
+  .scene-command-button {
+    display: inline-flex;
+    flex: 1;
+    max-width: 132px;
+    min-height: 26px;
   }
 
   .scene-tools {
@@ -3492,6 +3646,53 @@ button:disabled {
   .mine-layer-scrollbar {
     top: calc(-12px + 34.1%);
     bottom: calc(34px + 4.45%);
+  }
+
+  .mobile-section-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid #59402a;
+    border-radius: 6px;
+    background: #15110d;
+    box-shadow: 0 7px 18px rgb(0 0 0 / 22%);
+  }
+
+  .mobile-section-tabs button {
+    display: flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+    color: #bca985;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .mobile-section-tabs button svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .mobile-section-tabs button.is-active {
+    color: #23170a;
+    border-color: #ffe19a;
+    background: linear-gradient(180deg, #ffd36a, #e8a43b);
+    box-shadow: 0 3px 0 #714514;
+  }
+
+  .game-app[data-mine-section="production"] .layer-rail-shell {
+    display: none !important;
+  }
+
+  .game-app[data-mine-section="layers"] .production-grid,
+  .game-app[data-mine-section="layers"] .center-utility {
+    display: none !important;
   }
 
   .production-grid {

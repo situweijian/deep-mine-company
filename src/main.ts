@@ -138,42 +138,49 @@ const TUTORIAL_STEPS = [
     detail: '点“开挖”启动本层班组，最多可连续预排 5 次。',
     line: 'drill',
     action: 'queue',
+    actionLabel: '立即开挖',
   },
   {
     title: '把矿石吊上地面',
     detail: '井下有货后点“起吊”，也可预排 5 次；吊机会按实际来料层接货。',
     line: 'lift',
     action: 'queue',
+    actionLabel: '立即起吊',
   },
   {
     title: '送往总部结算',
     detail: '点一下“发车”。到账的钱可以升级设备，也能解锁更深矿层。',
     line: 'truck',
     action: 'queue',
+    actionLabel: '立即发车',
   },
   {
     title: '升级一次钻机',
     detail: '多跑几趟，凑够费用后升级钻机。等级提高会同时加快速度、增加单次产量。',
     line: 'drill',
     action: 'upgrade',
+    actionLabel: '升级钻机',
   },
   {
     title: '雇第一个本层监工',
     detail: '先为当前矿层雇监工。每个新矿层都要手动开局，再交给本层监工值守。',
     line: 'drill',
     action: 'automation',
+    actionLabel: '雇本层监工',
   },
   {
     title: '给起吊线雇监工',
     detail: '吊机负责所有矿层。接驳监工接管后，各层堆好的矿石会按批次送上地面。',
     line: 'lift',
     action: 'automation',
+    actionLabel: '雇接驳监工',
   },
   {
     title: '给车队雇监工',
     detail: '卡车同样服务所有矿层。本层监工与接驳监工齐备后，矿石会持续结算。',
     line: 'truck',
     action: 'automation',
+    actionLabel: '雇车队监工',
   },
 ] as const;
 
@@ -181,7 +188,7 @@ const appRoot = document.querySelector<HTMLDivElement>('#app');
 if (!appRoot) throw new Error('缺少 #app 容器。');
 
 appRoot.innerHTML = `
-  <div class="game-app" id="game-app" data-view="mine">
+  <div class="game-app" id="game-app" data-view="mine" data-mine-section="production">
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"><i data-lucide="pickaxe"></i></span>
@@ -223,10 +230,18 @@ appRoot.innerHTML = `
       <div class="tutorial-banner" id="tutorial-banner">
         <span class="tutorial-step" id="tutorial-step">1/7</span>
         <div class="tutorial-copy">
+          <span class="tutorial-kicker" id="tutorial-kicker">新手任务 · 第 1 步</span>
           <strong id="tutorial-title">先让钻机转起来</strong>
-          <span id="tutorial-detail">点“开挖”启动本层班组，最多可连续预排 5 次。</span>
+          <span class="tutorial-detail" id="tutorial-detail">点“开挖”启动本层班组，最多可连续预排 5 次。</span>
         </div>
+        <button class="tutorial-primary" id="tutorial-primary" type="button" data-action="tutorial-primary">
+          <span id="tutorial-primary-label">立即开挖</span>
+          <i data-lucide="chevron-right"></i>
+        </button>
         <button class="tutorial-skip" type="button" data-action="skip-tutorial">跳过</button>
+        <span class="tutorial-progress" aria-hidden="true">
+          <span id="tutorial-progress-fill"></span>
+        </span>
       </div>
     </div>
 
@@ -363,6 +378,10 @@ appRoot.innerHTML = `
               <span class="scene-pill" id="scene-underground">井下货值 ¥0</span>
               <span class="scene-pill" id="scene-surface">地面货值 ¥0</span>
             </div>
+            <button class="scene-command-button hidden" id="scene-command-button" type="button" data-action="scene-command">
+              <i data-lucide="sparkles"></i>
+              <span id="scene-command-label">一键排班 ×5</span>
+            </button>
             <div class="scene-tools">
               <button class="scene-action-button" type="button" data-action="open-crew" title="打开值班室" aria-label="打开值班室">
                 <i data-lucide="users"></i>
@@ -398,6 +417,17 @@ appRoot.innerHTML = `
             <strong id="unlock-layer-cost">¥130</strong>
           </button>
         </section>
+
+        <nav class="mobile-section-tabs" data-workspace="mine" aria-label="矿场操作切换">
+          <button class="is-active" type="button" data-action="mine-section" data-section="production">
+            <i data-lucide="pickaxe"></i>
+            <span>生产操作</span>
+          </button>
+          <button type="button" data-action="mine-section" data-section="layers">
+            <i data-lucide="layers-3"></i>
+            <span>矿层调度</span>
+          </button>
+        </nav>
 
         <div class="layer-rail-shell" data-workspace="mine">
           <div class="layer-rail-head">
@@ -564,11 +594,14 @@ let layerRailSignature = '';
 let layerNavigatorDeepest = 0;
 let sceneHitareaSignature = '';
 let tutorialTarget: HTMLElement | null = null;
+let sceneCommandMode: 'queue' | 'ad' = 'queue';
+let sceneCommandLine: LineId = 'drill';
 let lastHiddenAt = 0;
 let saveAccumulator = 0;
 let uiAccumulator = 0;
 let lastFrameAt = performance.now();
 let activeWorkspaceView: WorkspaceView = 'mine';
+let activeMineSection: 'production' | 'layers' = 'production';
 let activeLayerWindowCount = getResponsiveLayerCount(window.innerWidth);
 const pendingMineralDiscoveries = new Set<number>();
 let mineralDiscoveryTimer = 0;
@@ -700,8 +733,12 @@ const statBestSale = element<HTMLElement>('stat-best-sale');
 const offlineCap = element<HTMLElement>('offline-cap');
 const tutorialBanner = element<HTMLElement>('tutorial-banner');
 const tutorialStep = element<HTMLElement>('tutorial-step');
+const tutorialKicker = element<HTMLElement>('tutorial-kicker');
 const tutorialTitle = element<HTMLElement>('tutorial-title');
 const tutorialDetail = element<HTMLElement>('tutorial-detail');
+const tutorialPrimary = element<HTMLButtonElement>('tutorial-primary');
+const tutorialPrimaryLabel = element<HTMLElement>('tutorial-primary-label');
+const tutorialProgressFill = element<HTMLElement>('tutorial-progress-fill');
 const sceneLayerLabel = element<HTMLElement>('scene-layer-label');
 const sceneLayerPrev = element<HTMLButtonElement>('scene-layer-prev');
 const sceneLayerNext = element<HTMLButtonElement>('scene-layer-next');
@@ -715,6 +752,8 @@ const sceneEventMessage = element<HTMLElement>('scene-event-message');
 const sceneUnderground = element<HTMLElement>('scene-underground');
 const sceneSurface = element<HTMLElement>('scene-surface');
 const sceneMultiplier = element<HTMLElement>('scene-multiplier');
+const sceneCommandButton = element<HTMLButtonElement>('scene-command-button');
+const sceneCommandLabel = element<HTMLElement>('scene-command-label');
 const sceneLayerHitareas = element<HTMLElement>('scene-layer-hitareas');
 const mineStage = element<HTMLElement>('mine-stage');
 const mineLayerScrollbar = element<HTMLElement>('mine-layer-scrollbar');
@@ -839,6 +878,7 @@ mineLayerScrollbar.addEventListener('keydown', (event) => {
 
 applySettings();
 applyWorkspaceView('mine');
+setMineSection(activeMineSection);
 mineScene.setLayerWindowCount(activeLayerWindowCount);
 updateUI();
 scheduleInitialModals();
@@ -1319,6 +1359,7 @@ function updateUI(): void {
   }
 
   updateTutorial();
+  updateSceneCommand();
   updateMineLayerScrollbar();
   updateLayerToolbar();
   updateLayerRail();
@@ -1492,21 +1533,35 @@ function updateTutorial(): void {
   if (!step) return;
   tutorialBanner.classList.remove('hidden');
   tutorialStep.textContent = `${state.tutorialStep + 1}/7`;
+  tutorialKicker.textContent = `新手任务 · 第 ${state.tutorialStep + 1} 步`;
   tutorialTitle.textContent = step.title;
+  tutorialPrimaryLabel.textContent = step.actionLabel;
+  tutorialPrimary.classList.remove('is-waiting');
+  tutorialPrimary.disabled = false;
+  tutorialProgressFill.style.width = `${((state.tutorialStep + 1) / TUTORIAL_STEPS.length) * 100}%`;
 
   let detail = step.detail;
-  if (state.tutorialStep === 3 && state.money < getLineUpgradeCost('drill', state.lines.drill.level)) {
-    detail += ` 还差 ${formatMoney(getLineUpgradeCost('drill', state.lines.drill.level) - state.money)}。`;
-  } else if (state.tutorialStep >= 4) {
-    const line = step.line;
-    const cost = getAutomationCost(line, state.currentLayer);
-    if (state.money < cost) detail += ` 还差 ${formatMoney(cost - state.money)}。`;
+  const stepCost =
+    step.action === 'upgrade'
+      ? getLineUpgradeCost('drill', state.lines.drill.level)
+      : step.action === 'automation'
+        ? getAutomationCost(step.line, state.currentLayer)
+        : 0;
+  if (stepCost > state.money) {
+    const missing = stepCost - state.money;
+    detail += ` 还差 ${formatMoney(missing)}。`;
+    tutorialPrimaryLabel.textContent = `还差 ${formatMoney(missing)}`;
+    tutorialPrimary.disabled = true;
+    tutorialPrimary.classList.add('is-waiting');
   }
   tutorialDetail.textContent = detail;
-  tutorialTarget =
-    step.line === 'drill' && step.action === 'automation'
-      ? layerToolbarSupervisor
-      : lineRefs[step.line].root;
+  tutorialPrimary.setAttribute(
+    'aria-label',
+    tutorialPrimary.disabled
+      ? `资金不足，还差 ${formatMoney(Math.max(0, stepCost - state.money))}`
+      : step.actionLabel,
+  );
+  tutorialTarget = lineRefs[step.line].root;
   tutorialTarget.classList.add('is-tutorial-target');
 }
 
@@ -1535,6 +1590,45 @@ function skipAutomatedTutorialSteps(): boolean {
 function clearTutorialTarget(): void {
   tutorialTarget?.classList.remove('is-tutorial-target');
   tutorialTarget = null;
+}
+
+function setMineSection(section: 'production' | 'layers'): void {
+  activeMineSection = section;
+  gameApp.dataset.mineSection = section;
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-action="mine-section"]')
+    .forEach((button) => {
+      const active = button.dataset.section === section;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+}
+
+function updateSceneCommand(): void {
+  if (!state.tutorialCompleted) {
+    sceneCommandButton.classList.add('hidden');
+    return;
+  }
+  sceneCommandButton.classList.remove('hidden');
+  const candidates: LineId[] = ['drill', 'lift', 'truck'];
+  const line = candidates.find((candidate) =>
+    candidate === 'drill'
+      ? !isDrillLayerAutomated(state, state.currentLayer, false)
+      : !isLineAutomated(state, candidate, false),
+  );
+  if (line) {
+    sceneCommandMode = 'queue';
+    sceneCommandLine = line;
+    sceneCommandLabel.textContent = `一键${LINE_META[line].verb} ×5`;
+    sceneCommandButton.disabled = false;
+    sceneCommandButton.classList.remove('is-boost');
+    return;
+  }
+  sceneCommandMode = 'ad';
+  sceneCommandLabel.textContent =
+    state.adBoostSeconds >= 29 * 60 ? '收益已满档' : '双倍收益';
+  sceneCommandButton.disabled = state.adBoostSeconds >= 29 * 60;
+  sceneCommandButton.classList.add('is-boost');
 }
 
 function updateDailyRows(root: ParentNode): void {
@@ -1924,10 +2018,69 @@ function handleRecommendedUpgrade(): void {
   applyOutcome(buyRecommendedUpgrade(state), 'upgrade');
 }
 
+function runTutorialPrimary(): void {
+  if (state.tutorialCompleted) return;
+  const step = TUTORIAL_STEPS[state.tutorialStep];
+  if (!step) return;
+  if (step.action === 'queue') {
+    activateLine(step.line);
+    return;
+  }
+  if (step.action === 'upgrade') {
+    const previousTier = equipmentTierLevel(state.lines.drill.level);
+    if (applyOutcome(buyLineUpgrade(state, 'drill'), 'upgrade')) {
+      const nextTier = equipmentTierLevel(state.lines.drill.level);
+      mineScene.equipmentUpgraded('drill', state.lines.drill.level);
+      if (nextTier > previousTier) sfx.play('tier_up');
+      sfx.vibrate(16);
+    }
+    return;
+  }
+  if (
+    applyOutcome(
+      buyAutomation(state, step.line, state.currentLayer),
+      'reward',
+    )
+  ) {
+    sfx.vibrate([12, 40, 18]);
+    if (getAllLinesAutomated(state)) {
+      window.setTimeout(showAutomationUnlocked, 450);
+    }
+  }
+}
+
+function runSceneCommand(): void {
+  if (sceneCommandMode === 'ad') {
+    void handleOnlineAd();
+    return;
+  }
+  if (applyOutcome(queueLineToCapacity(state, sceneCommandLine), 'queue')) {
+    sfx.vibrate(12);
+  }
+}
+
 function handleAction(button: HTMLElement): void {
   const action = button.dataset.action;
   if (!action) return;
   sfx.unlock();
+
+  if (action === 'tutorial-primary') {
+    runTutorialPrimary();
+    return;
+  }
+
+  if (action === 'scene-command') {
+    runSceneCommand();
+    return;
+  }
+
+  if (action === 'mine-section') {
+    const section = button.dataset.section;
+    if (section === 'production' || section === 'layers') {
+      setMineSection(section);
+    }
+    return;
+  }
 
   if (
     action === 'queue' ||

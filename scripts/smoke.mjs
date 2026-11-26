@@ -87,6 +87,7 @@ try {
           '.brand',
           '.money-hud',
           '.tutorial-banner',
+          '.tutorial-primary',
           '.scene-frame',
           '#mine-stage canvas',
           '.layer-rail-shell',
@@ -96,8 +97,19 @@ try {
           '#unlock-layer-button',
           '[data-action="upgrade-layer"]',
         ];
-        const missing = requiredSelectors.filter((selector) => !rectOf(selector));
-        const outsideViewport = requiredSelectors
+        const desktopOnlySelectors = new Set([
+          '.layer-rail-shell',
+          '.layer-card',
+          '[data-action="upgrade-layer"]',
+        ]);
+        const activeRequiredSelectors =
+          innerWidth <= 640
+            ? requiredSelectors.filter(
+                (selector) => !desktopOnlySelectors.has(selector),
+              )
+            : requiredSelectors;
+        const missing = activeRequiredSelectors.filter((selector) => !rectOf(selector));
+        const outsideViewport = activeRequiredSelectors
           .filter((selector) => selector !== '#mine-stage canvas')
           .map((selector) => [selector, rectOf(selector)])
           .filter(([, rect]) => rect && (rect.left < -1 || rect.right > innerWidth + 1))
@@ -195,9 +207,7 @@ try {
         const actionButton = document.querySelector(
           '[data-action="queue"][data-line="drill"]',
         );
-        const automationButton = document.querySelector(
-          '#layer-toolbar-supervisor',
-        );
+        const automationButton = document.querySelector('#line-drill-automation');
         const lineTitle = document.querySelector('.line-title h3');
         const brandTitle = document.querySelector('.brand-copy h1');
         const productionRect = productionGrid?.getBoundingClientRect();
@@ -230,7 +240,9 @@ try {
             productionColumns,
             actionButtonHeight: actionButton?.getBoundingClientRect().height ?? 0,
             automationButtonHeight:
-              automationButton?.getBoundingClientRect().height ?? 0,
+              automationButton
+                ? Number.parseFloat(getComputedStyle(automationButton).minHeight)
+                : 0,
             lineTitleFontSize: lineTitle
               ? Number.parseFloat(getComputedStyle(lineTitle).fontSize)
               : 0,
@@ -260,9 +272,7 @@ try {
         const actionButton = document.querySelector(
           '[data-action="queue"][data-line="drill"]',
         );
-        const automationButton = document.querySelector(
-          '#layer-toolbar-supervisor',
-        );
+        const automationButton = document.querySelector('#line-drill-automation');
         const lineTitle = document.querySelector('.line-title h3');
         return {
           horizontalOverflow:
@@ -289,7 +299,9 @@ try {
             : 0,
           actionButtonHeight: actionButton?.getBoundingClientRect().height ?? 0,
           automationButtonHeight:
-            automationButton?.getBoundingClientRect().height ?? 0,
+            automationButton
+              ? Number.parseFloat(getComputedStyle(automationButton).minHeight)
+              : 0,
           lineTitleFontSize: lineTitle
             ? Number.parseFloat(getComputedStyle(lineTitle).fontSize)
             : 0,
@@ -299,9 +311,43 @@ try {
           productionBeforeLayerRail:
             productionGrid.getBoundingClientRect().top <
             document.querySelector('.layer-rail-shell').getBoundingClientRect().top,
+          sectionTabsVisible:
+            [...document.querySelectorAll('[data-action="mine-section"]')].filter(
+              visible,
+            ).length === 2,
+          tutorialActionHeight:
+            document.querySelector('.tutorial-primary')?.getBoundingClientRect()
+              .height ?? 0,
           sceneVisible: visible(document.querySelector('.scene-frame')),
         };
       });
+
+      let mobileSectionState = null;
+      if (viewport.width <= 640) {
+        await page
+          .locator('[data-action="mine-section"][data-section="layers"]')
+          .click();
+        await page.waitForTimeout(80);
+        mobileSectionState = await page.evaluate(() => {
+          const visible = (selector) => {
+            const element = document.querySelector(selector);
+            if (!element) return false;
+            const style = getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            return style.display !== 'none' && rect.width > 0 && rect.height > 0;
+          };
+          const supervisor = document.querySelector('#layer-toolbar-supervisor');
+          return {
+            layerVisible: visible('.layer-rail-shell'),
+            productionHidden: !visible('.production-grid'),
+            supervisorHeight: supervisor?.getBoundingClientRect().height ?? 0,
+          };
+        });
+        await page
+          .locator('[data-action="mine-section"][data-section="production"]')
+          .click();
+        await page.waitForTimeout(80);
+      }
 
       const canvasScreenshot = await page.locator('#mine-stage canvas').screenshot();
       const canvasPixels = await page.evaluate(async (pngBase64) => {
@@ -331,6 +377,13 @@ try {
         };
       }, canvasScreenshot.toString('base64'));
       layout.canvas = { ...layout.canvas, ...canvasPixels };
+
+      await page.locator('#tutorial-primary').click();
+      await page.waitForFunction(
+        () => globalThis.mineCompany?.getState?.().tutorialStep === 1,
+        null,
+        { timeout: 5_000 },
+      );
 
       for (const line of ['lift', 'truck', 'drill']) {
         const button = page.locator(
@@ -505,10 +558,24 @@ try {
       }
       if (
         viewport.width <= 640 &&
-        (operationsLayout.productionColumns !== 1 ||
-          !operationsLayout.productionBeforeLayerRail)
+        operationsLayout.productionColumns !== 1
       ) {
         failures.push('mobile operations view is not a focused single column');
+      }
+      if (viewport.width <= 640 && !operationsLayout.sectionTabsVisible) {
+        failures.push('mobile production and layer section tabs are not visible');
+      }
+      if (operationsLayout.tutorialActionHeight < 44) {
+        failures.push('tutorial primary action is below the 44px touch target');
+      }
+      if (
+        viewport.width <= 640 &&
+        mobileSectionState &&
+        (!mobileSectionState.layerVisible ||
+          !mobileSectionState.productionHidden ||
+          mobileSectionState.supervisorHeight < 44)
+      ) {
+        failures.push('mobile layer section does not switch to a usable layer panel');
       }
       if (
         viewport.width <= 640 &&

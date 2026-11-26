@@ -302,7 +302,7 @@ export class SfxEngine {
       }
       gain.gain.setValueAtTime(0.0001, start);
       gain.gain.exponentialRampToValueAtTime(
-        Math.max(0.0001, preset.gain * this.effectiveSfxVolume()),
+        Math.max(0.0001, preset.gain * 4.2 * this.effectiveSfxVolume()),
         start + 0.008,
       );
       gain.gain.exponentialRampToValueAtTime(0.0001, end);
@@ -485,7 +485,7 @@ export class SfxEngine {
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(cutoff, start);
     gain.gain.setValueAtTime(
-      Math.max(0.0001, gainValue * this.effectiveMusicVolume()),
+      Math.max(0.0001, gainValue * 1.9 * this.effectiveMusicVolume()),
       start,
     );
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
@@ -524,7 +524,7 @@ export class SfxEngine {
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(420, start);
     gain.gain.setValueAtTime(
-      Math.max(0.0001, gainValue * this.effectiveSfxVolume()),
+      Math.max(0.0001, gainValue * 3.5 * this.effectiveSfxVolume()),
       start,
     );
     gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
@@ -537,26 +537,26 @@ export class SfxEngine {
   }
 
   private effectiveSfxVolume(): number {
-    return Math.pow(this.sfxVolume, 1.35) * 0.72;
+    return Math.pow(this.sfxVolume, 1.05);
   }
 
   private effectiveMusicVolume(): number {
-    return Math.pow(this.musicVolume, 1.12) * 0.92;
+    return Math.pow(this.musicVolume, 1.05) * 1.05;
   }
 
   private ensureAudioGraph(context: AudioContext): void {
     if (this.sfxBus && this.musicBus && this.compressor) return;
     const compressor = context.createDynamicsCompressor();
-    compressor.threshold.setValueAtTime(-20, context.currentTime);
-    compressor.knee.setValueAtTime(14, context.currentTime);
-    compressor.ratio.setValueAtTime(4, context.currentTime);
-    compressor.attack.setValueAtTime(0.004, context.currentTime);
-    compressor.release.setValueAtTime(0.24, context.currentTime);
+    compressor.threshold.setValueAtTime(-16, context.currentTime);
+    compressor.knee.setValueAtTime(10, context.currentTime);
+    compressor.ratio.setValueAtTime(6, context.currentTime);
+    compressor.attack.setValueAtTime(0.003, context.currentTime);
+    compressor.release.setValueAtTime(0.18, context.currentTime);
 
     const sfxBus = context.createGain();
     const musicBus = context.createGain();
-    sfxBus.gain.setValueAtTime(1, context.currentTime);
-    musicBus.gain.setValueAtTime(1, context.currentTime);
+    sfxBus.gain.setValueAtTime(1.45, context.currentTime);
+    musicBus.gain.setValueAtTime(1.25, context.currentTime);
     sfxBus.connect(compressor);
     musicBus.connect(compressor);
     compressor.connect(context.destination);
