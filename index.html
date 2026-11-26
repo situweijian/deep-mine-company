@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="挖穿地心公司，一款可以手动经营、自动挂机的原创像素采矿小游戏。"
+    />
+    <meta name="theme-color" content="#17120e" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>挖穿地心公司</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #17120e;
+        color: #fff0d0;
+      }
+
+      .boot-screen {
+        display: grid;
+        min-height: 100vh;
+        padding: 24px;
+        box-sizing: border-box;
+        place-items: center;
+        font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      }
+
+      .boot-card {
+        width: min(340px, 100%);
+        padding: 24px;
+        border: 1px solid #8b6232;
+        border-left: 5px solid #e8a43b;
+        border-radius: 6px;
+        background: #241b14;
+        box-shadow: 0 18px 48px rgb(0 0 0 / 38%);
+        text-align: center;
+      }
+
+      .boot-mark {
+        display: grid;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 14px;
+        place-items: center;
+        color: #21170c;
+        border-radius: 4px;
+        background: #e8a43b;
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      .boot-card strong {
+        display: block;
+        font-size: 20px;
+      }
+
+      .boot-card small {
+        display: block;
+        margin-top: 8px;
+        color: #c9b38f;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .boot-progress {
+        height: 6px;
+        margin-top: 18px;
+        overflow: hidden;
+        border-radius: 3px;
+        background: #100d09;
+      }
+
+      .boot-progress::after {
+        display: block;
+        width: 42%;
+        height: 100%;
+        background: linear-gradient(90deg, #8b5722, #ffd06a);
+        content: "";
+        animation: boot-progress 1.15s ease-in-out infinite alternate;
+      }
+
+      @keyframes boot-progress {
+        from {
+          transform: translateX(-45%);
+        }
+        to {
+          transform: translateX(185%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <main class="boot-screen">
+        <section class="boot-card">
+          <span class="boot-mark">矿</span>
+          <strong>挖穿地心公司</strong>
+          <small data-boot-message>正在装载矿场，请稍候…</small>
+          <div class="boot-progress" aria-hidden="true"></div>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.setTimeout(() => {
+        const message = document.querySelector("[data-boot-message]");
+        if (message) {
+          message.textContent =
+            "网络较慢，矿场仍在装载。若长时间无响应，请刷新页面。";
+        }
+      }, 12000);
+    </script>
+    <noscript>需要启用 JavaScript 才能运行游戏。</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

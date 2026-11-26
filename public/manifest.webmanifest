@@ -1,0 +1,20 @@
+{
+  "name": "挖穿地心公司",
+  "short_name": "挖穿地心",
+  "description": "手动开挖，自动挂机，一路挖到地心。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "background_color": "#17262c",
+  "theme_color": "#17262c"
+}

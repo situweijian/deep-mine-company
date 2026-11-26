@@ -1,0 +1,4 @@
+asset_id,type,name,source,author,license,usage,notes
+code-visuals,generated,Phaser scene graphics,original project code,project author,project-owned,game scene,No copied game assets
+code-icons,generated,UI symbolic icons,lucide npm package,Lucide contributors,ISC,interface,Attribution details in package lock and package metadata
+audio-sfx,generated,Web Audio oscillator effects,original project code,project author,project-owned,game feedback,Generated at runtime with no sampled audio
